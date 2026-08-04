@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "igi-python"
+version = "0.1.0"
+description = "Gemeinsames Monorepo für SAS->Python-Migrationen bei IGI: igi_base-Bibliothek + Migrationsskripte pro Fachbereich"
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv>=1.0",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+    "pandas>=2.0",
+    "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/igi_base"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+src = ["src", "migration"]
