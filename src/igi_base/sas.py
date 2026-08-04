@@ -9,9 +9,7 @@ import pandas as pd
 def sas_round(value, ndigits: int = 0):
     """Rundet wie SAS: half away from zero inklusive Float-Toleranz."""
     if isinstance(value, pd.Series):
-        return value.apply(
-            lambda x: sas_round(x, ndigits=ndigits)
-        )
+        return value.apply(lambda x: sas_round(x, ndigits=ndigits))
 
     if pd.isna(value):
         return np.nan
@@ -30,10 +28,10 @@ def sas_round(value, ndigits: int = 0):
     tolerance = 1e-12 * max(1.0, abs(x))
 
     if math.isclose(
-            x,
-            nearest_half,
-            rel_tol=0.0,
-            abs_tol=tolerance,
+        x,
+        nearest_half,
+        rel_tol=0.0,
+        abs_tol=tolerance,
     ):
         x = nearest_half
 

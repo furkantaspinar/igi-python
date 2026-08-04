@@ -81,7 +81,9 @@ def main() -> None:
     engine_roh = get_engine(env_var="PROCESSING_DB")
 
     # da noch keine Daten von 2023 veröffentlicht, werden die von 2022 verwendet
-    kr = pd.read_sql_table(table_name="kr_erwt_br_2022", con=engine_roh, schema="roh_genesis")
+    kr = pd.read_sql_table(
+        table_name="kr_erwt_br_2022", con=engine_roh, schema="roh_genesis"
+    )
 
     # Hauptbranche 3 ist in der 2 enthalten. Für weitere Rechnungen wird die
     # 3 aus der 2 entfernt (Gesamtzahl bleibt erhalten)
@@ -134,26 +136,26 @@ def main() -> None:
     # auf OT
     datab_00b = datab_00a2
     datab_00b["mn_mitarbeiter_estm_anp"] = sas_round(
-        datab_00b.groupby(["ags11", "br_absch_hptcode"])["mitarbeiter_estm_anp"].transform(
-            "mean"
-        )
+        datab_00b.groupby(["ags11", "br_absch_hptcode"])[
+            "mitarbeiter_estm_anp"
+        ].transform("mean")
     )
 
     # auf Gemeinde
     datab_00c = datab_00b
     datab_00c["ags8"] = datab_00c["ags11"].str[:8]
     datab_00c["mn2_mitarbeiter_estm_anp"] = sas_round(
-        datab_00c.groupby(["ags8", "br_absch_hptcode"])["mitarbeiter_estm_anp"].transform(
-            "mean"
-        )
+        datab_00c.groupby(["ags8", "br_absch_hptcode"])[
+            "mitarbeiter_estm_anp"
+        ].transform("mean")
     )
 
     # auf Kreis
     datab_00d = datab_00c
     datab_00d["mn3_mitarbeiter_estm_anp"] = sas_round(
-        datab_00d.groupby(["ags5", "br_absch_hptcode"])["mitarbeiter_estm_anp"].transform(
-            "mean"
-        )
+        datab_00d.groupby(["ags5", "br_absch_hptcode"])[
+            "mitarbeiter_estm_anp"
+        ].transform("mean")
     )
 
     # Insgesamt nach Branche
@@ -188,16 +190,26 @@ def main() -> None:
     )
     bedingungen = [
         datab_01["br_absch_hptcode"] == 1,  # (A) Land-, Forstwirtschaft und Fischerei
-        datab_01["br_absch_hptcode"].isin([2, 4, 5]),  # (B-E ohne C) Prod. Gewerbe ohne Bau-/verarb. Gewerbe
+        datab_01["br_absch_hptcode"].isin(
+            [2, 4, 5]
+        ),  # (B-E ohne C) Prod. Gewerbe ohne Bau-/verarb. Gewerbe
         datab_01["br_absch_hptcode"] == 3,  # (C) Verarbeitendes Gewerbe
         datab_01["br_absch_hptcode"] == 6,  # (F) Baugewerbe
-        datab_01["br_absch_hptcode"].isin([7, 8, 9, 10]),  # Handel, Verkehr, Gastgewerbe, Info/Kommunikation
-        datab_01["br_absch_hptcode"].isin([11, 12, 13, 14]),  # Finanz-, Versicherungs-, Unternehmensdienstl.
-        datab_01["br_absch_hptcode"].isin([15, 16, 17, 18, 19, 20, 21]),  # Öffentl./sonst. Dienstl., Erziehung
+        datab_01["br_absch_hptcode"].isin(
+            [7, 8, 9, 10]
+        ),  # Handel, Verkehr, Gastgewerbe, Info/Kommunikation
+        datab_01["br_absch_hptcode"].isin(
+            [11, 12, 13, 14]
+        ),  # Finanz-, Versicherungs-, Unternehmensdienstl.
+        datab_01["br_absch_hptcode"].isin(
+            [15, 16, 17, 18, 19, 20, 21]
+        ),  # Öffentl./sonst. Dienstl., Erziehung
     ]
     for n, bedingung in zip(BRANCHEN, bedingungen):
         datab_01[f"casa_anz_firm_b{n}"] = np.where(bedingung, 1, np.nan)
-    datab_01["casa_anz_firm_b99"] = np.where(datab_01["br_absch_hptcode"].isna(), 1, np.nan)
+    datab_01["casa_anz_firm_b99"] = np.where(
+        datab_01["br_absch_hptcode"].isna(), 1, np.nan
+    )
 
     # Mitarbeiter auf AGS5 und AGS11 aggregieren
     for n in BRANCHEN:
@@ -220,7 +232,9 @@ def main() -> None:
     datab_02b["ot_mitarbeiter"] = sas_sum(datab_02b, hbr_spalten)
 
     datab_03 = datab_02b[datab_02b["ags11"] != ""].copy()
-    datab_03["kr_mitarbeiter"] = datab_03.groupby("ags5")["ot_mitarbeiter"].transform("sum")
+    datab_03["kr_mitarbeiter"] = datab_03.groupby("ags5")["ot_mitarbeiter"].transform(
+        "sum"
+    )
     for spalte in hbr_spalten:
         kr_spalte = spalte.replace("ot_", "kr_")
         datab_03[kr_spalte] = datab_03.groupby("ags5")[spalte].transform("sum")
@@ -238,8 +252,12 @@ def main() -> None:
 
     # Wenn Basis größer als amtliche Gesamtzahl, dann amtliche Zahl gleich
     # setzen, wenn relative Abweichung kleiner als 1.3
-    differenz_rel = sas_round(datab_05a["kr_erwt_basis"] / datab_05a["kr_erwt_ges"], ndigits=2)
-    anpassen = (datab_05a["kr_erwt_basis"] > datab_05a["kr_erwt_ges"]) & (differenz_rel < 1.3)
+    differenz_rel = sas_round(
+        datab_05a["kr_erwt_basis"] / datab_05a["kr_erwt_ges"], ndigits=2
+    )
+    anpassen = (datab_05a["kr_erwt_basis"] > datab_05a["kr_erwt_ges"]) & (
+        differenz_rel < 1.3
+    )
     datab_05a.loc[anpassen, "kr_erwt_ges"] = datab_05a.loc[anpassen, "kr_erwt_basis"]
 
     datab_05a["rest_differenz"] = datab_05a["kr_erwt_ges"] - datab_05a["kr_erwt_basis"]
@@ -288,16 +306,24 @@ def main() -> None:
         datab_06.loc[fehlt_ganz, "ot_erwt_basis"]
     )
 
-    alle_missing_und_0 = datab_06["ot_erwt_ao_b01"].isna() & (datab_06["ot_erwt_ao_anz"] == 0)
+    alle_missing_und_0 = datab_06["ot_erwt_ao_b01"].isna() & (
+        datab_06["ot_erwt_ao_anz"] == 0
+    )
     datab_06.loc[alle_missing_und_0, b_spalten] = 0
 
     datab_06["delta1"] = datab_06["ot_erwt_basis"] - datab_06["ot_erwt_ao_anz"]
     delta1_positiv = datab_06["delta1"] > 0
-    datab_06.loc[delta1_positiv, "ot_erwt_ao_b99"] += datab_06.loc[delta1_positiv, "delta1"]
-    datab_06.loc[delta1_positiv, "ot_erwt_ao_anz"] += datab_06.loc[delta1_positiv, "delta1"]
+    datab_06.loc[delta1_positiv, "ot_erwt_ao_b99"] += datab_06.loc[
+        delta1_positiv, "delta1"
+    ]
+    datab_06.loc[delta1_positiv, "ot_erwt_ao_anz"] += datab_06.loc[
+        delta1_positiv, "delta1"
+    ]
 
     # Werte vorerst finalisieren
-    datab_06["kr_ot_erwt_ao_anz"] = datab_06.groupby("ags5")["ot_erwt_ao_anz"].transform("sum")
+    datab_06["kr_ot_erwt_ao_anz"] = datab_06.groupby("ags5")[
+        "ot_erwt_ao_anz"
+    ].transform("sum")
 
     datab_11 = datab_06[["ags11", "ot_erwt_ao_anz"] + b_spalten].rename(
         columns={"ot_erwt_ao_anz": "ot_erwt_ao"}
@@ -327,7 +353,9 @@ def main() -> None:
 
     for n in BRANCHEN:
         spalte_n, spalte = f"ot_erwt_ao_b0{n}_n", f"ot_erwt_ao_b0{n}"
-        eich3.loc[eich3[spalte_n].isna(), spalte_n] = eich3.loc[eich3[spalte_n].isna(), spalte]
+        eich3.loc[eich3[spalte_n].isna(), spalte_n] = eich3.loc[
+            eich3[spalte_n].isna(), spalte
+        ]
     eich3.loc[eich3["ot_erwt_ao_b99_n"].isna(), "ot_erwt_ao_b99_n"] = eich3.loc[
         eich3["ot_erwt_ao_b99_n"].isna(), "ot_erwt_ao_b99"
     ]

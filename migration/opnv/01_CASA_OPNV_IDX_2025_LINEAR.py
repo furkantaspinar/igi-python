@@ -297,7 +297,7 @@ def main() -> None:
 
     logger.info("DRY RUN: opnv_13 wird nicht in die Datenbank geschrieben.")
 
-    opnv_13=opnv_13.sort_values("ags27")
+    opnv_13 = opnv_13.sort_values("ags27")
 
     logger.info("opnv_13 erstellt: %s Zeilen", len(opnv_13))
     logger.info("opnv_13 Vorschau:\n%s", opnv_13.head(20))
@@ -318,7 +318,7 @@ def main() -> None:
     )
 
     # Nur Sample speichern, damit die Datei nicht riesig wird
-    output_path="opnv_13_python_sample.csv"
+    output_path = "opnv_13_python_sample.csv"
 
     opnv_13.head(100_000).to_csv(
         output_path,

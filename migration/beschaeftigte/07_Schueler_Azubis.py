@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text  # noqa: F401
 
-from igi_base import get_engine, get_logger, load_environment, validate  # noqa: F401
+from igi_base import get_engine, get_logger, load_environment, validate
 from igi_base.sas import sas_round, sas_sum
 
 
@@ -95,17 +95,19 @@ def main() -> None:
 
     a3 = a2
     a3["sb_schueler"] = sas_round(a3["sb_schueler"])
-    logger.info("Schüler verteilt: %d Zeilen, Summe=%.0f", len(a3), a3["sb_schueler"].sum())
+    logger.info(
+        "Schüler verteilt: %d Zeilen, Summe=%.0f", len(a3), a3["sb_schueler"].sum()
+    )
 
     # Abspeichern
     # Auf SB
-    sb_schueler = a3[["ags20", "sb_schueler"]]
+    sb_schueler = a3[["ags20", "sb_schueler"]]  # noqa: F841 (für auskommentierten to_sql-Write unten)
 
     # Auf OT
     ot_schueler = (
-        a3.groupby("ags11", as_index=False)["sb_schueler"].sum().rename(
-            columns={"sb_schueler": "ot_schueler"}
-        )
+        a3.groupby("ags11", as_index=False)["sb_schueler"]
+        .sum()
+        .rename(columns={"sb_schueler": "ot_schueler"})
     )
 
     # ----- AZUBIS -----
@@ -126,9 +128,9 @@ def main() -> None:
 
     # Aufsummieren auf Kreis
     a2b_azubi = a1b[["ags5", "ags20", "sb_ew_15u30_anz", "kr_azubi"]].copy()
-    a2b_azubi["ags5_ew_15u30_anz"] = a2b_azubi.groupby("ags5")["sb_ew_15u30_anz"].transform(
-        "sum"
-    )
+    a2b_azubi["ags5_ew_15u30_anz"] = a2b_azubi.groupby("ags5")[
+        "sb_ew_15u30_anz"
+    ].transform("sum")
 
     # Verteilen
     a2_azubi = a2b_azubi
@@ -140,10 +142,18 @@ def main() -> None:
     a2_azubi["ags11"] = a2_azubi["ags20"].str[:11]
 
     a3_azubi = a2_azubi[
-        ["ags5", "ags11", "ags20", "sb_ew_15u30_anz", "ags5_ew_15u30_anz", "sb_azubi", "kr_azubi"]
+        [
+            "ags5",
+            "ags11",
+            "ags20",
+            "sb_ew_15u30_anz",
+            "ags5_ew_15u30_anz",
+            "sb_azubi",
+            "kr_azubi",
+        ]
     ].copy()
-    a3_azubi["ags5_azubi"] = sas_round(a3_azubi["sb_azubi"]).groupby(a3_azubi["ags5"]).transform(
-        "sum"
+    a3_azubi["ags5_azubi"] = (
+        sas_round(a3_azubi["sb_azubi"]).groupby(a3_azubi["ags5"]).transform("sum")
     )
     a3_azubi["delta"] = a3_azubi["kr_azubi"] - a3_azubi["ags5_azubi"]
 
@@ -159,13 +169,15 @@ def main() -> None:
 
     # Abspeichern
     # Auf SB
-    sb_azubi = a3b[["ags20", "sb_azubi_neu"]].rename(columns={"sb_azubi_neu": "sb_azubi"})
+    sb_azubi = a3b[["ags20", "sb_azubi_neu"]].rename(  # noqa: F841 (für auskommentierten to_sql-Write unten)
+        columns={"sb_azubi_neu": "sb_azubi"}
+    )
 
     # Auf OT
-    ot_azubi = (
-        a3b.groupby("ags11", as_index=False)["sb_azubi_neu"].sum().rename(
-            columns={"sb_azubi_neu": "ot_azubi"}
-        )
+    ot_azubi = (  # noqa: F841 (für auskommentierten to_sql-Write unten)
+        a3b.groupby("ags11", as_index=False)["sb_azubi_neu"]
+        .sum()
+        .rename(columns={"sb_azubi_neu": "ot_azubi"})
     )
 
     # Validierung gegen SAS-Referenz (vor dem Push):

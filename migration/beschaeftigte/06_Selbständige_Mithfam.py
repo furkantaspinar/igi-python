@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text  # noqa: F401
 
-from igi_base import get_engine, get_logger, load_environment, validate  # noqa: F401
+from igi_base import get_engine, get_logger, load_environment, validate
 from igi_base.sas import sas_round, sas_sum
 
 
@@ -43,14 +43,23 @@ def main() -> None:
 
     # Tabellen ins Work ziehen
     # Kreisdaten (leider noch von 2022)
-    kreis = pd.read_sql_table(table_name="kr_selbst_2022", con=engine_roh, schema="roh_genesis")
+    kreis = pd.read_sql_table(
+        table_name="kr_selbst_2022", con=engine_roh, schema="roh_genesis"
+    )
 
     # Firmendaten
     firmen = pd.read_sql_table(
         table_name="bedirect_vie_20250409",
         con=engine,
         schema="bedirect",
-        columns=["ags27", "ags20", "ags11", "ags5", "mitarbeiter_real", "br_absch_hptcode"],
+        columns=[
+            "ags27",
+            "ags20",
+            "ags11",
+            "ags5",
+            "mitarbeiter_real",
+            "br_absch_hptcode",
+        ],
     )
 
     # Beschäftigte im Dienstleistungssektor
@@ -58,12 +67,20 @@ def main() -> None:
     # Einordnung in Wirtschaftszweige
     bedingungen = [
         s1["br_absch_hptcode"] == 1,  # (A) Land-, Forstwirtschaft und Fischerei
-        s1["br_absch_hptcode"].isin([2, 4, 5]),  # (B-E ohne C) Produzierendes Gewerbe ohne Baugewerbe
+        s1["br_absch_hptcode"].isin(
+            [2, 4, 5]
+        ),  # (B-E ohne C) Produzierendes Gewerbe ohne Baugewerbe
         s1["br_absch_hptcode"] == 3,  # (C) Verarbeitendes Gewerbe
         s1["br_absch_hptcode"] == 6,  # (F) Baugewerbe
-        s1["br_absch_hptcode"].isin([7, 8, 9, 10]),  # Handel, Verkehr, Gastgewerbe, Information/Kommunikation
-        s1["br_absch_hptcode"].isin([11, 12, 13, 14]),  # Finanz-, Versicherungs-, Unternehmensdienstl., Grundstücke
-        s1["br_absch_hptcode"].isin([15, 16, 17, 18, 19, 20, 21]),  # Öffentliche/sonstige Dienstl., Erziehung, Gesundheit
+        s1["br_absch_hptcode"].isin(
+            [7, 8, 9, 10]
+        ),  # Handel, Verkehr, Gastgewerbe, Information/Kommunikation
+        s1["br_absch_hptcode"].isin(
+            [11, 12, 13, 14]
+        ),  # Finanz-, Versicherungs-, Unternehmensdienstl., Grundstücke
+        s1["br_absch_hptcode"].isin(
+            [15, 16, 17, 18, 19, 20, 21]
+        ),  # Öffentliche/sonstige Dienstl., Erziehung, Gesundheit
     ]
     branchen_codes = [1, 2, 3, 4, 5, 6, 7]
     s1["br_code"] = np.select(bedingungen, branchen_codes, default=np.nan)
@@ -81,7 +98,9 @@ def main() -> None:
     s3["besch"] = s3["mitarbeiter_real"]
     # Missings mit Durchschnittswerten ersetzen
     fehlt_mit_durchschnitt = s3["mitarbeiter_real"].isna() & s3["ma_br"].notna()
-    s3.loc[fehlt_mit_durchschnitt, "besch"] = sas_round(s3.loc[fehlt_mit_durchschnitt, "ma_br"])
+    s3.loc[fehlt_mit_durchschnitt, "besch"] = sas_round(
+        s3.loc[fehlt_mit_durchschnitt, "ma_br"]
+    )
     s3 = s3[s3["ags27"].fillna("") != ""]
 
     # Gesamtanzahl je Kreis und Branche
@@ -114,7 +133,9 @@ def main() -> None:
     s8 = s7
     for n in range(1, 8):
         br_kr_sicher = s8[f"br{n}_kr"].replace(0, np.nan)
-        s8[f"br{n}_geeicht"] = sas_round(s8[f"br{n}_anz"] / br_kr_sicher * s8[f"kr_selbst_br{n}"])
+        s8[f"br{n}_geeicht"] = sas_round(
+            s8[f"br{n}_anz"] / br_kr_sicher * s8[f"kr_selbst_br{n}"]
+        )
 
     geeicht_spalten = [f"br{n}_geeicht" for n in range(1, 8)]
     s8["sb_selbst"] = sas_sum(s8, geeicht_spalten)
@@ -144,14 +165,16 @@ def main() -> None:
     p4["sb_selbst_2"] = p4["sb_selbst_neu"] / ags5_selbst_sicher2 * p4["delta"]
     p4.loc[p4["ags5_selbst"] == 0, "sb_selbst_2"] = 0
     p4["sb_selbst"] = sas_round(sas_sum(p4, ["sb_selbst_neu", "sb_selbst_2"]))
-    logger.info("Selbständige verteilt: %d Zeilen, Summe=%.0f", len(p4), p4["sb_selbst"].sum())
+    logger.info(
+        "Selbständige verteilt: %d Zeilen, Summe=%.0f", len(p4), p4["sb_selbst"].sum()
+    )
 
     # Abspeichern in Ordner
 
     # Auf SB - SAS speichert hier sb_selbst_neu (nur die erste
     # Verteilungsrunde), nicht das doppelt nachverteilte sb_selbst; so im
     # Original, hier bewusst genauso übernommen.
-    sb_selbst = p4[p4["ags20"].fillna("") != ""][["ags20", "sb_selbst_neu"]]
+    sb_selbst = p4[p4["ags20"].fillna("") != ""][["ags20", "sb_selbst_neu"]]  # noqa: F841 (für auskommentierten to_sql-Write unten)
 
     # Auf OT
     ot_selbst = (

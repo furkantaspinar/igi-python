@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text  # noqa: F401
 
-from igi_base import get_engine, get_logger, load_environment, validate  # noqa: F401
+from igi_base import get_engine, get_logger, load_environment, validate
 from igi_base.sas import sas_round, sas_sum
 
 
@@ -110,46 +110,36 @@ def main() -> None:
     for column in ["ags27", "ags11", "ags8", "ags5"]:
         firmen[column] = firmen[column].astype("string").str.strip()
 
-    firmen = firmen[
-        firmen["ags11"].notna()
-        & firmen["ags11"].ne("")
-        ].copy()
+    firmen = firmen[firmen["ags11"].notna() & firmen["ags11"].ne("")].copy()
 
-    firmen = (
-        firmen.groupby(
-            ["ags5", "ags8", "ags11"],
-            as_index=False,
-            dropna=False,
-        )
-        .agg(
-            beschaeftigte=(
-                "mitarbeiter_real",
-                lambda values: values.sum(min_count=1),
-            )
+    firmen = firmen.groupby(
+        ["ags5", "ags8", "ags11"],
+        as_index=False,
+        dropna=False,
+    ).agg(
+        beschaeftigte=(
+            "mitarbeiter_real",
+            lambda values: values.sum(min_count=1),
         )
     )
 
     # Firmendaten aggregieren auf Gemeinde-Ebene
-    firmen["beschaeftigte_ags8"] = (
-        firmen.groupby(
-            "ags8",
-            dropna=False,
-        )["beschaeftigte"]
-        .transform(lambda values: values.sum(min_count=1))
-    )
+    firmen["beschaeftigte_ags8"] = firmen.groupby(
+        "ags8",
+        dropna=False,
+    )["beschaeftigte"].transform(lambda values: values.sum(min_count=1))
 
     # Firmendaten aggregieren auf Kreis-Ebene
-    firmen["beschaeftigte_ags5"] = (
-        firmen.groupby(
-            "ags5",
-            dropna=False,
-        )["beschaeftigte"]
-        .transform(lambda values: values.sum(min_count=1))
-    )
+    firmen["beschaeftigte_ags5"] = firmen.groupby(
+        "ags5",
+        dropna=False,
+    )["beschaeftigte"].transform(lambda values: values.sum(min_count=1))
 
     # ----- POIs -----
     # POIs einlesen
-    poi = pd.read_sql_table(table_name="ags27_casa_poi", con=engine, schema="variablen2025")
+    poi = pd.read_sql_table(
+        table_name="ags27_casa_poi", con=engine, schema="variablen2025"
+    )
     poi_spalten = [spalte for spalte in poi.columns if spalte.startswith("casa_poi_")]
     poi["sumpoi"] = sas_sum(poi, poi_spalten).fillna(0)
     poi["ags11"] = poi["ags27"].str[:11]
@@ -157,39 +147,30 @@ def main() -> None:
     poi["ags5"] = poi["ags27"].str[:5]
 
     # POIs auf OT aggregieren
-    poi_ags11 = (
-        poi.groupby(
-            "ags11",
-            as_index=False,
-            dropna=False,
-        )
-        .agg(
-            ot_poi=("sumpoi", lambda values: values.sum(min_count=1)),
-        )
+    poi_ags11 = poi.groupby(
+        "ags11",
+        as_index=False,
+        dropna=False,
+    ).agg(
+        ot_poi=("sumpoi", lambda values: values.sum(min_count=1)),
     )
 
     # POIs auf Gemeinde aggregieren
-    poi_ags8 = (
-        poi.groupby(
-            "ags8",
-            as_index=False,
-            dropna=False,
-        )
-        .agg(
-            gem_poi=("sumpoi", lambda values: values.sum(min_count=1)),
-        )
+    poi_ags8 = poi.groupby(
+        "ags8",
+        as_index=False,
+        dropna=False,
+    ).agg(
+        gem_poi=("sumpoi", lambda values: values.sum(min_count=1)),
     )
 
     # POIs auf Kreis aggregieren
-    poi_ags5 = (
-        poi.groupby(
-            "ags5",
-            as_index=False,
-            dropna=False,
-        )
-        .agg(
-            kr_poi=("sumpoi", lambda values: values.sum(min_count=1)),
-        )
+    poi_ags5 = poi.groupby(
+        "ags5",
+        as_index=False,
+        dropna=False,
+    ).agg(
+        kr_poi=("sumpoi", lambda values: values.sum(min_count=1)),
     )
 
     ######
@@ -239,40 +220,34 @@ def main() -> None:
 
     with np.errstate(divide="ignore", invalid="ignore"):
         standard_verteilung = (
-                                      (
-                                              ao3["beschaeftigte"]
-                                              / ao3["beschaeftigte_ags8"]
-                                      )
-                                      + (
-                                              ao3["ot_poi"]
-                                              / ao3["gem_poi"]
-                                      )
-                              ) * ao3["gem_be_ao_ges"] / 2
+            (
+                (ao3["beschaeftigte"] / ao3["beschaeftigte_ags8"])
+                + (ao3["ot_poi"] / ao3["gem_poi"])
+            )
+            * ao3["gem_be_ao_ges"]
+            / 2
+        )
 
     standard_verteilung = standard_verteilung.replace(
         [np.inf, -np.inf],
         np.nan,
     )
 
-    ao3["ot_besch_ao"] = sas_round(
-        standard_verteilung
-    )
+    ao3["ot_besch_ao"] = sas_round(standard_verteilung)
 
     # Fehlende POI-Informationen werden in den aktuellen Daten teilweise
     # als 0 statt als Missing dargestellt. In beiden Fällen wird nur anhand
     # der Bedirect-Beschäftigten verteilt.
     kein_poi_anteil = (
-            ao3["ot_poi"].isna()
-            | ao3["ot_poi"].eq(0)
-            | ao3["gem_poi"].isna()
-            | ao3["gem_poi"].eq(0)
+        ao3["ot_poi"].isna()
+        | ao3["ot_poi"].eq(0)
+        | ao3["gem_poi"].isna()
+        | ao3["gem_poi"].eq(0)
     )
 
     with np.errstate(divide="ignore", invalid="ignore"):
         beschaeftigten_verteilung = (
-                ao3["beschaeftigte"]
-                / ao3["beschaeftigte_ags8"]
-                * ao3["gem_be_ao_ges"]
+            ao3["beschaeftigte"] / ao3["beschaeftigte_ags8"] * ao3["gem_be_ao_ges"]
         )
 
     beschaeftigten_verteilung = beschaeftigten_verteilung.replace(
@@ -283,9 +258,7 @@ def main() -> None:
     ao3.loc[
         kein_poi_anteil,
         "ot_besch_ao",
-    ] = sas_round(
-        beschaeftigten_verteilung.loc[kein_poi_anteil]
-    )
+    ] = sas_round(beschaeftigten_verteilung.loc[kein_poi_anteil])
 
     # SAS:
     # if GEM_be_ao_ges = 0 then OT_BESCH_AO = 0;
@@ -296,9 +269,7 @@ def main() -> None:
 
     # SAS:
     # if OT_BESCH_AO = . then delete;
-    ao3 = ao3.loc[
-        ao3["ot_besch_ao"].notna()
-    ].copy()
+    ao3 = ao3.loc[ao3["ot_besch_ao"].notna()].copy()
 
     # Zahlen verteilen, wo Gemeindewerte Missing sind
     ao4 = ao2[ao2["gem_be_ao_ges"].isna()].copy()
@@ -306,100 +277,77 @@ def main() -> None:
     # Mitarbeiter auf Kreis aggregieren
     ao5 = ao4.copy()
 
-    ao5["beschaeftigte_ags5"] = (
-        ao5.groupby(
-            "ags5",
-            dropna=False,
-        )["beschaeftigte"]
-        .transform(lambda values: values.sum(min_count=1))
-    )
+    ao5["beschaeftigte_ags5"] = ao5.groupby(
+        "ags5",
+        dropna=False,
+    )["beschaeftigte"].transform(lambda values: values.sum(min_count=1))
 
-    ao5["kr_poi"] = (
-        ao5.groupby(
-            "ags5",
-            dropna=False,
-        )["ot_poi"]
-        .transform(lambda values: values.sum(min_count=1))
-    )
+    ao5["kr_poi"] = ao5.groupby(
+        "ags5",
+        dropna=False,
+    )["ot_poi"].transform(lambda values: values.sum(min_count=1))
 
     # Differenz zwischen Gemeinden und Kreis verteilen
     ao6 = ao5
     beschaeftigte_ags5 = ao6["beschaeftigte_ags5"].replace(0, np.nan)
     kr_poi = ao6["kr_poi"].replace(0, np.nan)
 
-    #ao6["ot_besch_ao"] = sas_round(
+    # ao6["ot_besch_ao"] = sas_round(
     #    ((ao6["beschaeftigte"] / beschaeftigte_ags5) + (ao6["ot_poi"] / kr_poi))
     #    * ao6["gem_be_ao_delta"]
     #    / 2
-    #)
+    # )
 
     with np.errstate(divide="ignore", invalid="ignore"):
         kreisverteilung = (
-                                  (
-                                          ao6["beschaeftigte"]
-                                          / beschaeftigte_ags5
-                                  )
-                                  + (
-                                          ao6["ot_poi"]
-                                          / kr_poi
-                                  )
-                          ) * ao6["gem_be_ao_delta"] / 2
+            ((ao6["beschaeftigte"] / beschaeftigte_ags5) + (ao6["ot_poi"] / kr_poi))
+            * ao6["gem_be_ao_delta"]
+            / 2
+        )
 
     kreisverteilung = kreisverteilung.replace(
         [np.inf, -np.inf],
         np.nan,
     )
 
-    ao6["ot_besch_ao"] = sas_round(
-        kreisverteilung
-    )
+    ao6["ot_besch_ao"] = sas_round(kreisverteilung)
 
-    #kein_poi6 = ao6["ot_poi"].isna()
+    # kein_poi6 = ao6["ot_poi"].isna()
     kein_poi6 = (
-            ao6["ot_poi"].isna()
-            | ao6["ot_poi"].eq(0)
-            | ao6["kr_poi"].isna()
-            | ao6["kr_poi"].eq(0)
+        ao6["ot_poi"].isna()
+        | ao6["ot_poi"].eq(0)
+        | ao6["kr_poi"].isna()
+        | ao6["kr_poi"].eq(0)
     )
 
-    #ao6.loc[kein_poi6, "ot_besch_ao"] = sas_round(
+    # ao6.loc[kein_poi6, "ot_besch_ao"] = sas_round(
     #    ao6.loc[kein_poi6, "beschaeftigte"]
     #    / beschaeftigte_ags5[kein_poi6]
     #    * ao6.loc[kein_poi6, "gem_be_ao_delta"]
-    #)
+    # )
 
     with np.errstate(divide="ignore", invalid="ignore"):
         kreisverteilung_nur_beschaeftigte = (
-                ao6["beschaeftigte"]
-                / beschaeftigte_ags5
-                * ao6["gem_be_ao_delta"]
+            ao6["beschaeftigte"] / beschaeftigte_ags5 * ao6["gem_be_ao_delta"]
         )
 
-    kreisverteilung_nur_beschaeftigte = (
-        kreisverteilung_nur_beschaeftigte.replace(
-            [np.inf, -np.inf],
-            np.nan,
-        )
+    kreisverteilung_nur_beschaeftigte = kreisverteilung_nur_beschaeftigte.replace(
+        [np.inf, -np.inf],
+        np.nan,
     )
 
     ao6.loc[
         kein_poi6,
         "ot_besch_ao",
-    ] = sas_round(
-        kreisverteilung_nur_beschaeftigte.loc[
-            kein_poi6
-        ]
-    )
-
+    ] = sas_round(kreisverteilung_nur_beschaeftigte.loc[kein_poi6])
 
     ao6.loc[ao6["gem_be_ao_delta"] == 0, "ot_besch_ao"] = 0
     ao6 = ao6[ao6["ot_besch_ao"].notna()]
 
-
     # Tabellen zusammenfügen
     ao7 = pd.concat([ao3, ao6], ignore_index=True)
 
-    #ao8 = ao7.groupby("ags11", as_index=False).agg(
+    # ao8 = ao7.groupby("ags11", as_index=False).agg(
     #    ags5=("ags5", "first"),
     #    ags8=("ags8", "first"),
     #    kr_be_ao_ges=("kr_be_ao_ges", "first"),
@@ -407,7 +355,7 @@ def main() -> None:
     #    beschaeftigte_ot=("beschaeftigte", "sum"),
     #    ot_besch_ao=("ot_besch_ao", "sum"),
     #    anz=("ags11", "count"),
-    #)
+    # )
 
     #####
 
@@ -437,31 +385,26 @@ def main() -> None:
     # (Württ-Sonderregel ist im SAS-Original bereits auskommentiert und
     # daher hier nicht übersetzt)
     ao12 = ao8
-    ao12["ot_besch_ags5"] = (
-        ao12.groupby(
-            "ags5",
-            dropna=False,
-        )["ot_besch_ao"]
-        .transform(lambda values: values.sum(min_count=1))
-    )
+    ao12["ot_besch_ags5"] = ao12.groupby(
+        "ags5",
+        dropna=False,
+    )["ot_besch_ao"].transform(lambda values: values.sum(min_count=1))
     ot_besch_ags5 = ao12["ot_besch_ags5"].replace(0, np.nan)
     with np.errstate(divide="ignore", invalid="ignore"):
-        kreis_eichung = (
-                ao12["ot_besch_ao"]
-                * ao12["kr_be_ao_ges"]
-                / ot_besch_ags5
-        )
+        kreis_eichung = ao12["ot_besch_ao"] * ao12["kr_be_ao_ges"] / ot_besch_ags5
 
     kreis_eichung = kreis_eichung.replace(
         [np.inf, -np.inf],
         np.nan,
     )
 
-    ao12["ot_besch_ao_neu"] = sas_round(
-        kreis_eichung
-    )
+    ao12["ot_besch_ao_neu"] = sas_round(kreis_eichung)
     ao12.loc[ao12["ot_besch_ao"] == 0, "ot_besch_ao_neu"] = 0
-    logger.info("SvB AO verteilt: %d Zeilen, Summe=%.0f", len(ao12), ao12["ot_besch_ao_neu"].sum())
+    logger.info(
+        "SvB AO verteilt: %d Zeilen, Summe=%.0f",
+        len(ao12),
+        ao12["ot_besch_ao_neu"].sum(),
+    )
 
     # Abspeichern
     ot_be_ao = ao12[["ags11", "ot_besch_ao_neu"]].rename(
