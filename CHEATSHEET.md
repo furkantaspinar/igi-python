@@ -11,6 +11,7 @@ Dieses Cheatsheet ist für SAS-Programmierer:innen gedacht, die bestehende SAS-S
 # Python Library imports, e.g.
 import pandas as pd
 import numpy as np
+
 ...
 ```
 
@@ -193,10 +194,7 @@ df = df.sort_values(["id", "income"], ascending=[True, False])
 | `proc sort nodupkey; by id;` | `df.sort_values("id").drop_duplicates("id", keep="first")` |
 
 ```python
-deduped = (
-    df.sort_values("id")
-      .drop_duplicates(subset=["id"], keep="first")
-)
+deduped = df.sort_values("id").drop_duplicates(subset=["id"], keep="first")
 ```
 
 ### Erste / letzte Zeile je Gruppe
@@ -207,11 +205,7 @@ deduped = (
 | `by id; if last.id;` | `df.sort_values("id").groupby("id").tail(1)` |
 
 ```python
-first_per_id = (
-    df.sort_values("id")
-      .groupby("id", as_index=False)
-      .head(1)
-)
+first_per_id = df.sort_values("id").groupby("id", as_index=False).head(1)
 ```
 
 ---
@@ -271,9 +265,7 @@ df["idx"] = sas_round(raw, ndigits=5)
 | `if find(job_title, "Health");` | `df[df["job_title"].str.contains("Health", case=False, na=False)]` |
 
 ```python
-health = df.loc[
-    df["job_title"].str.contains("Health", case=False, na=False)
-].copy()
+health = df.loc[df["job_title"].str.contains("Health", case=False, na=False)].copy()
 ```
 
 ### Substring
@@ -342,7 +334,9 @@ Trotzdem sollte man nicht bei jedem SAS-Zwischenschritt automatisch
 ```python
 # Kein .copy(): "firmen" wird einfach Schritt für Schritt umgebaut,
 # die Rohtabelle wird nicht mehr gebraucht und kann aus dem Speicher fallen.
-firmen = firmen.groupby(["ags5", "ags8", "ags11"], as_index=False)["mitarbeiter_real"].sum()
+firmen = firmen.groupby(["ags5", "ags8", "ags11"], as_index=False)[
+    "mitarbeiter_real"
+].sum()
 
 # .copy() nötig: "ao2" wird weiter unten noch einmal separat gefiltert (ao4),
 # eine Änderung an ao3 darf ao2 nicht mit verändern.
@@ -378,6 +372,7 @@ def add_variable(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["new_variable"] = 1
     return df
+
 
 my_data = add_variable(my_data)
 ```

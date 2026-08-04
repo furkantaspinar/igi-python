@@ -39,7 +39,7 @@ PythonOperator-Tasks.
 """
 
 import importlib.util
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
@@ -59,50 +59,50 @@ def _load_main(relative_script_path: str):
     return module.main
 
 
-with DAG(
-    dag_id="main",
-    description="Zentrales DAG für alle migrierten SAS->Python-Skripte des Repos",
-    schedule=None,  # manuell/on-demand - kein Cron nötig während der Migration
-    start_date=datetime(2025, 1, 1),
-    catchup=False,
-    tags=["sas-migration"],
-) as dag:
+with (
+    DAG(
+        dag_id="main",
+        description="Zentrales DAG für alle migrierten SAS->Python-Skripte des Repos",
+        schedule=None,  # manuell/on-demand - kein Cron nötig während der Migration
+        start_date=datetime(2025, 1, 1, tzinfo=UTC),
+        catchup=False,
+        tags=["sas-migration"],
+    ) as dag,
+    TaskGroup(group_id="beschaeftigte") as beschaeftigte_group,
+):
     # --- Themenbereich: Beschaeftigte ---
     # Migrierte Skripte: 05_SvB_AO, 06_Selbständige_Mithfam, 10_ERWTPERS_AO.
     # 10 braucht (über die DB-Tabelle variablen2025.ags11_ot_soz) die
     # Outputs von 05 UND 06.
-    with TaskGroup(group_id="beschaeftigte") as beschaeftigte_group:
-        beschaeftigte_05_svb_ao = PythonOperator(
-            task_id="05_svb_ao",
-            python_callable=_load_main("beschaeftigte/05_SvB_AO.py"),
-        )
-        beschaeftigte_06_selbstaendige_mithfam = PythonOperator(
-            task_id="06_selbstaendige_mithfam",
-            python_callable=_load_main(
-                "beschaeftigte/06_Selbständige_Mithfam.py"
-            ),
-        )
-        beschaeftigte_10_erwtpers_ao = PythonOperator(
-            task_id="10_erwtpers_ao",
-            python_callable=_load_main("beschaeftigte/10_ERWTPERS_AO.py"),
-        )
+    beschaeftigte_05_svb_ao = PythonOperator(
+        task_id="05_svb_ao",
+        python_callable=_load_main("beschaeftigte/05_SvB_AO.py"),
+    )
+    beschaeftigte_06_selbstaendige_mithfam = PythonOperator(
+        task_id="06_selbstaendige_mithfam",
+        python_callable=_load_main("beschaeftigte/06_Selbständige_Mithfam.py"),
+    )
+    beschaeftigte_10_erwtpers_ao = PythonOperator(
+        task_id="10_erwtpers_ao",
+        python_callable=_load_main("beschaeftigte/10_ERWTPERS_AO.py"),
+    )
 
-        [
-            beschaeftigte_05_svb_ao,
-            beschaeftigte_06_selbstaendige_mithfam,
-        ] >> beschaeftigte_10_erwtpers_ao
+    [
+        beschaeftigte_05_svb_ao,
+        beschaeftigte_06_selbstaendige_mithfam,
+    ] >> beschaeftigte_10_erwtpers_ao
 
-        # for_Studenten.sql ist reines SQL (CREATE INDEX/CREATE MATERIALIZED
-        # VIEW) ohne pandas-Transformation - dafür SQLExecuteQueryOperator
-        # statt PythonOperator/_load_main(). conn_id verweist auf eine in
-        # Airflow hinterlegte Connection (Admin -> Connections), nicht auf
-        # eine .env-Variable wie bei den PythonOperator-Tasks oben - Name
-        # wie im get_engine()-Kommentar in der _template-Vorlage.
-        beschaeftigte_for_studenten = SQLExecuteQueryOperator(
-            task_id="for_studenten",
-            conn_id="i360prod-sos_scheduler_user",
-            sql="migration/beschaeftigte/sas/for_Studenten.sql",
-        )
+    # for_Studenten.sql ist reines SQL (CREATE INDEX/CREATE MATERIALIZED
+    # VIEW) ohne pandas-Transformation - dafür SQLExecuteQueryOperator
+    # statt PythonOperator/_load_main(). conn_id verweist auf eine in
+    # Airflow hinterlegte Connection (Admin -> Connections), nicht auf
+    # eine .env-Variable wie bei den PythonOperator-Tasks oben - Name
+    # wie im get_engine()-Kommentar in der _template-Vorlage.
+    beschaeftigte_for_studenten = SQLExecuteQueryOperator(
+        task_id="for_studenten",
+        conn_id="i360prod-sos_scheduler_user",
+        sql="migration/beschaeftigte/sas/for_Studenten.sql",
+    )
 
     # Weitere Themenbereiche (z.B. opnv) werden als eigene TaskGroup ergänzt,
     # sobald deren Skripte migriert sind - siehe Docstring oben für die
