@@ -39,14 +39,22 @@ PythonOperator-Tasks.
 """
 
 import importlib.util
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).parent.parent
+
+# igi_base liegt unter src/ und wird auf dem Airflow-Server nicht installiert
+# (kein pip install/uv sync nötig) - der Deploy kopiert nur Dateien, deshalb
+# hier src/ direkt auf den Python-Pfad legen, damit `from igi_base import ...`
+# in den Migrationsskripten funktioniert.
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG, TaskGroup
 
-REPO_ROOT = Path(__file__).parent.parent
 MIGRATION_ROOT = REPO_ROOT / "migration"
 
 
