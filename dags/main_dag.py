@@ -109,7 +109,7 @@ with (
     beschaeftigte_for_studenten = SQLExecuteQueryOperator(
         task_id="for_studenten",
         conn_id="i360prod-sos_scheduler_user",
-        sql="migration/beschaeftigte/sas/for_Studenten.sql",
+        sql=str(MIGRATION_ROOT / "beschaeftigte" / "sas" / "for_Studenten.sql"),
     )
 
     # Weitere Themenbereiche (z.B. opnv) werden als eigene TaskGroup ergänzt,
