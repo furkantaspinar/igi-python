@@ -81,7 +81,7 @@ def _load_main(relative_script_path: str):
 
 with (
     DAG(
-        dag_id="main",
+        dag_id="beschaeftigte",
         description="Beispiel DAG für migrierten SAS->Python-Beschaeftigten-Skripte",
         schedule=None,  # manuell/on-demand - kein Cron nötig während der Migration
         start_date=datetime(2025, 1, 1, tzinfo=UTC),
