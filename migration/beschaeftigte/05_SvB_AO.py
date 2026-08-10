@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text  # noqa: F401
 
-from igi_base import get_engine, get_logger, load_environment, validate
+from igi_base import get_engine, get_logger, load_environment
 from igi_base.sas import sas_round, sas_sum
 
 
@@ -41,7 +41,9 @@ def main() -> None:
     logger = get_logger(__name__)
 
     engine = get_engine("i360prod-sos_scheduler_user", env_var="PROD_DB")
-    engine_roh = get_engine("i360processing-sos_scheduler_user", env_var="PROCESSING_DB")
+    engine_roh = get_engine(
+        "i360processing-sos_scheduler_user", env_var="PROCESSING_DB"
+    )
 
     # Kreisdaten einlesen - Ab PAGS25 in Datenbank
     amt_kr = pd.read_sql_table(

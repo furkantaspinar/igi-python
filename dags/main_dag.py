@@ -43,7 +43,6 @@ PythonOperator-Tasks.
 import importlib.util
 import os
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -54,7 +53,7 @@ REPO_ROOT = Path(__file__).parent.parent
 # in den Migrationsskripten funktioniert.
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-#from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+# from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG, TaskGroup, Variable
 
@@ -95,7 +94,7 @@ def _pruefe_beschaeftigte_dummy() -> None:
     _load_main("beschaeftigte/99_Pruefung_Dummy.py")()
 
 
-with DAG(
+with DAG(  # noqa: SIM117
     dag_id="beschaeftigte",
     description="Beispiel DAG für migrierten SAS->Python-Beschaeftigten-Skripte",
     schedule=None,  # manuell/on-demand - kein Cron nötig während der Migration

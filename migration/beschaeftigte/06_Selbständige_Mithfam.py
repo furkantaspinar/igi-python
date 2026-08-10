@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text  # noqa: F401
 
-from igi_base import get_engine, get_logger, load_environment, validate
+from igi_base import get_engine, get_logger, load_environment
 from igi_base.sas import sas_round, sas_sum
 
 
@@ -39,7 +39,9 @@ def main() -> None:
     logger = get_logger(__name__)
 
     engine = get_engine("i360prod-sos_scheduler_user", env_var="PROD_DB")
-    engine_roh = get_engine("i360processing-sos_scheduler_user", env_var="PROCESSING_DB")
+    engine_roh = get_engine(
+        "i360processing-sos_scheduler_user", env_var="PROCESSING_DB"
+    )
 
     # Tabellen ins Work ziehen
     # Kreisdaten (leider noch von 2022)
@@ -177,12 +179,12 @@ def main() -> None:
     sb_selbst = p4[p4["ags20"].fillna("") != ""][["ags20", "sb_selbst_neu"]]  # noqa: F841 (für auskommentierten to_sql-Write unten)
 
     # Auf OT
-    ot_selbst = (
-        p4[p4["ags11"].fillna("") != ""]
-        .groupby("ags11", as_index=False)["sb_selbst"]
-        .sum()
-        .rename(columns={"sb_selbst": "ot_selbst"})
-    )
+    # ot_selbst = (
+    #     p4[p4["ags11"].fillna("") != ""]
+    #     .groupby("ags11", as_index=False)["sb_selbst"]
+    #     .sum()
+    #     .rename(columns={"sb_selbst": "ot_selbst"})
+    # )
 
     # Validierung gegen SAS-Referenz (vor dem Push):
     # validate(

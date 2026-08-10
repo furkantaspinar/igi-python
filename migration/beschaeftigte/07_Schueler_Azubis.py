@@ -39,7 +39,9 @@ def main() -> None:
     logger = get_logger(__name__)
 
     engine = get_engine("i360prod-sos_scheduler_user", env_var="PROD_DB")
-    engine_roh = get_engine("i360processing-sos_scheduler_user", env_var="PROCESSING_DB")
+    engine_roh = get_engine(
+        "i360processing-sos_scheduler_user", env_var="PROCESSING_DB"
+    )
 
     # Match Altersstruktur und Daten auf Kreis
 
