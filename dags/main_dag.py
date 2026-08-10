@@ -51,7 +51,7 @@ REPO_ROOT = Path(__file__).parent.parent
 # in den Migrationsskripten funktioniert.
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+#from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sdk import DAG, TaskGroup
 
@@ -106,11 +106,11 @@ with (
     # Airflow hinterlegte Connection (Admin -> Connections), nicht auf
     # eine .env-Variable wie bei den PythonOperator-Tasks oben - Name
     # wie im get_engine()-Kommentar in der _template-Vorlage.
-    beschaeftigte_for_studenten = SQLExecuteQueryOperator(
-        task_id="for_studenten",
-        conn_id="i360prod-sos_scheduler_user",
-        sql=str(MIGRATION_ROOT / "beschaeftigte" / "sas" / "for_Studenten.sql"),
-    )
+    # beschaeftigte_for_studenten = SQLExecuteQueryOperator(
+    #     task_id="for_studenten",
+    #     conn_id="i360prod-sos_scheduler_user",
+    #     sql=str(MIGRATION_ROOT / "beschaeftigte" / "sas" / "for_Studenten.sql"),
+    # )
 
     # Weitere Themenbereiche (z.B. opnv) werden als eigene TaskGroup ergänzt,
     # sobald deren Skripte migriert sind - siehe Docstring oben für die
