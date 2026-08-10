@@ -41,6 +41,7 @@ PythonOperator-Tasks.
 """
 
 import importlib.util
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -55,7 +56,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 #from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.standard.operators.python import PythonOperator
-from airflow.sdk import DAG, TaskGroup
+from airflow.sdk import DAG, TaskGroup, Variable
 
 MIGRATION_ROOT = REPO_ROOT / "migration"
 
@@ -79,6 +80,21 @@ def _load_main(relative_script_path: str):
     return module.main
 
 
+def _pruefe_beschaeftigte_dummy() -> None:
+    """Wrapper um 99_Pruefung_Dummy.main(): liest die Airflow-Variable
+    "beschaeftigte_pruefung_ergebnis" (Admin -> Variables im UI, ohne
+    Redeploy änderbar) und reicht sie als Env-Var PRUEFUNG_ERGEBNIS an das
+    Skript weiter, damit dieses airflow-frei bleibt (wie die übrigen
+    Migrationsskripte, siehe Docstring dort):
+    - "erfolgreich" (Default, falls Variable nicht gesetzt) -> Task grün
+    - "fehler" -> Task schlägt fehl (löst z.B. email_on_failure aus)
+    """
+    os.environ["PRUEFUNG_ERGEBNIS"] = Variable.get(
+        "beschaeftigte_pruefung_ergebnis", default="erfolgreich"
+    )
+    _load_main("beschaeftigte/99_Pruefung_Dummy.py")()
+
+
 with (
     DAG(
         dag_id="beschaeftigte",
@@ -92,9 +108,9 @@ with (
     TaskGroup(group_id="beschaeftigte") as beschaeftigte_group,
 ):
     # --- Themenbereich: Beschaeftigte ---
-    # Migrierte Skripte: 05_SvB_AO, 06_Selbständige_Mithfam, 10_ERWTPERS_AO.
-    # 10 braucht (über die DB-Tabelle variablen2025.ags11_ot_soz) die
-    # Outputs von 05 UND 06.
+    # Migrierte Skripte: 05_SvB_AO, 06_Selbständige_Mithfam, 10_ERWTPERS_AO,
+    # 99_Pruefung_Dummy (Platzhalter-Prüfung, siehe unten). 10 braucht (über
+    # die DB-Tabelle variablen2025.ags11_ot_soz) die Outputs von 05 UND 06.
     beschaeftigte_05_svb_ao = PythonOperator(
         task_id="05_svb_ao",
         python_callable=_load_main("beschaeftigte/05_SvB_AO.py"),
@@ -107,11 +123,20 @@ with (
         task_id="10_erwtpers_ao",
         python_callable=_load_main("beschaeftigte/10_ERWTPERS_AO.py"),
     )
+    # 99_Pruefung_Dummy: Platzhalter für ein echtes Prüfskript, das das
+    # Ergebnis der Gruppe in der DB validiert (Zeilenzahlen, Wertebereiche
+    # etc.). Kein eigener .env-Bedarf wie bei den anderen, aber sonst gleich
+    # behandelt wie ein migriertes Skript - siehe _pruefe_beschaeftigte_dummy().
+    beschaeftigte_99_pruefung_dummy = PythonOperator(
+        task_id="99_pruefung_dummy",
+        python_callable=_pruefe_beschaeftigte_dummy,
+    )
 
     [
         beschaeftigte_05_svb_ao,
         beschaeftigte_06_selbstaendige_mithfam,
     ] >> beschaeftigte_10_erwtpers_ao
+    beschaeftigte_10_erwtpers_ao >> beschaeftigte_99_pruefung_dummy
 
     # for_Studenten.sql ist reines SQL (CREATE INDEX/CREATE MATERIALIZED
     # VIEW) ohne pandas-Transformation - dafür SQLExecuteQueryOperator
