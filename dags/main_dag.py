@@ -59,6 +59,16 @@ from airflow.sdk import DAG, TaskGroup
 
 MIGRATION_ROOT = REPO_ROOT / "migration"
 
+# E-Mail-Benachrichtigung bei fehlgeschlagenen Tasks. Setzt voraus, dass auf
+# dem Airflow-Server ein SMTP-Server konfiguriert ist (airflow.cfg [smtp]
+# bzw. AIRFLOW__SMTP__* Env-Vars) - das ist nicht Teil dieses Repos.
+# TODO: Platzhalter-Adresse durch die echte(n) Team-Adresse(n) ersetzen.
+default_args = {
+    "email": ["futa@netlight.com"],
+    "email_on_failure": True,
+    "email_on_retry": False,
+}
+
 
 def _load_main(relative_script_path: str):
     """Lädt die main()-Funktion aus einem Skript mit Ziffern-Präfix im Dateinamen."""
@@ -77,6 +87,7 @@ with (
         start_date=datetime(2025, 1, 1, tzinfo=UTC),
         catchup=False,
         tags=["sas-migration"],
+        default_args=default_args,
     ) as dag,
     TaskGroup(group_id="beschaeftigte") as beschaeftigte_group,
 ):
