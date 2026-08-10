@@ -1,12 +1,14 @@
 """
-Zentrales DAG für alle SAS->Python-Migrationen dieses Repos.
+Beispiel-DAG für migrierte SAS->Python-Skripte, aktuell für den
+Themenbereich "beschaeftigte" (nur ein Teil der zu migrierenden Skripte
+dieses Repos, kein zentrales DAG für alle Migrationen).
 
-Ziel: EIN DAG für die gesamte Migration. Jeder Themenbereich bekommt eine eigene
-TaskGroup (klappbar im Airflow-UI), aber alle Tasks leben im
-selben DAG-Graphen - Abhängigkeiten sind daher auch ÜBER Gruppengrenzen
-hinweg möglich (eine Task in TaskGroup B kann von einer Task in TaskGroup A
-abhängen). Das ist in Airflow kein Sonderfall: TaskGroups sind rein
-visuell/organisatorisch, keine Isolationsgrenze für `>>`.
+Prinzip: Jeder Themenbereich bekommt eine eigene TaskGroup (klappbar im
+Airflow-UI), aber alle Tasks leben im selben DAG-Graphen - Abhängigkeiten
+sind daher auch ÜBER Gruppengrenzen hinweg möglich (eine Task in TaskGroup B
+kann von einer Task in TaskGroup A abhängen). Das ist in Airflow kein
+Sonderfall: TaskGroups sind rein visuell/organisatorisch, keine
+Isolationsgrenze für `>>`.
 
 Konvention für's Team, wenn ein weiteres Skript migriert ist:
 1. Eigene TaskGroup für den Themenbereich anlegen (falls noch nicht
