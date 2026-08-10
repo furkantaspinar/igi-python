@@ -7,29 +7,16 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add server to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Rsync repo to Airflow server
+      - name: Sync repo to Airflow dags path
         env:
-          SSH_PORT: ${{ secrets.SSH_PORT != '' && secrets.SSH_PORT || '22' }}
+          AIRFLOW_DEPLOY_PATH: ${{ secrets.AIRFLOW_DEPLOY_PATH }}
         run: |
           rsync -avz --delete \
-            -e "ssh -p ${SSH_PORT} -o UserKnownHostsFile=$HOME/.ssh/known_hosts" \
             --exclude '.git/' \
             --exclude '.venv/' \
             --exclude '__pycache__/' \
@@ -41,13 +28,4 @@ jobs:
             --exclude '*.sas7bdat' \
             --exclude '.env' \
             --exclude '**/.env' \
-            ./ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.AIRFLOW_DEPLOY_PATH }}/"
-
-      # --- OPTIONAL: Airflow neu starten, damit der DAG sofort neu geparst wird ---
-      # Auskommentiert, da unbekannt ist, wie Airflow auf dem Server läuft
-      # (systemd, docker-compose, managed). In der Regel NICHT nötig: der
-      # Scheduler pollt den dags_folder ohnehin (dag_dir_list_interval, Default 5min).
-      #
-      # - name: Restart Airflow (systemd)
-      #   run: ssh -p ${SSH_PORT} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-      #        "sudo systemctl restart airflow-scheduler airflow-webserver"
+            ./ "${AIRFLOW_DEPLOY_PATH}/"

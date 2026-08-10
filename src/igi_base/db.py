@@ -1,10 +1,14 @@
 """SQLAlchemy-Engine für die DB-Verbindung - lokal via .env, in Airflow via Connection."""
 
-import os
+from __future__ import annotations
 
-from sqlalchemy import Engine, create_engine
+import os
+from typing import TYPE_CHECKING
 
 from igi_base.env import Environment, detect_environment
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
 
 
 def get_engine(conn_id: str | None = None, *, env_var: str | None = None) -> Engine:
@@ -25,4 +29,6 @@ def get_engine(conn_id: str | None = None, *, env_var: str | None = None) -> Eng
 
     if env_var is None:
         raise ValueError("env_var is required in local environment")
+    from sqlalchemy import create_engine
+
     return create_engine(os.environ[env_var])

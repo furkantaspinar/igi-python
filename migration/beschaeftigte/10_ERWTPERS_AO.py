@@ -77,8 +77,10 @@ def main() -> None:
     load_environment(Path(__file__).parent / ".env")
     logger = get_logger(__name__)
 
-    engine = get_engine(env_var="PROD_DB")
-    engine_roh = get_engine(env_var="PROCESSING_DB")
+    engine = get_engine("i360prod-sos_scheduler_user", env_var="PROD_DB")
+    engine_roh = get_engine(
+        "i360processing-sos_scheduler_user", env_var="PROCESSING_DB"
+    )
 
     # da noch keine Daten von 2023 veröffentlicht, werden die von 2022 verwendet
     kr = pd.read_sql_table(
