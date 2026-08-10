@@ -70,7 +70,7 @@ def _load_main(relative_script_path: str):
 with (
     DAG(
         dag_id="main",
-        description="Zentrales DAG für alle migrierten SAS->Python-Skripte des Repos",
+        description="Beispiel DAG für migrierten SAS->Python-Beschaeftigten-Skripte",
         schedule=None,  # manuell/on-demand - kein Cron nötig während der Migration
         start_date=datetime(2025, 1, 1, tzinfo=UTC),
         catchup=False,
@@ -88,7 +88,7 @@ with (
     )
     beschaeftigte_06_selbstaendige_mithfam = PythonOperator(
         task_id="06_selbstaendige_mithfam",
-        python_callable=_load_main("beschaeftigte/06_Selbständige_Mithfam.py"),
+        python_callable=_load_main("beschaeftigte/06_Selbstaendige_Mithfam.py"),
     )
     beschaeftigte_10_erwtpers_ao = PythonOperator(
         task_id="10_erwtpers_ao",
