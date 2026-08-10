@@ -29,11 +29,3 @@ jobs:
             --exclude '.env' \
             --exclude '**/.env' \
             ./ "${AIRFLOW_DEPLOY_PATH}/"
-
-      # --- OPTIONAL: Airflow neu starten, damit der DAG sofort neu geparst wird ---
-      # Auskommentiert, da unbekannt ist, wie Airflow auf dem Server läuft
-      # (systemd, docker-compose, managed). In der Regel NICHT nötig: der
-      # Scheduler pollt den dags_folder ohnehin (dag_dir_list_interval, Default 5min).
-      #
-      # - name: Restart Airflow (systemd)
-      #   run: sudo systemctl restart airflow-scheduler airflow-webserver

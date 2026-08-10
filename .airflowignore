@@ -1,0 +1,10 @@
+# Airflow scannt sonst JEDE .py-Datei unter dags_folder rekursiv als
+# DAG-Kandidat und importiert sie dabei direkt - auch die Migrationsskripte
+# unter migration/, die aber kein sys.path-Setup für `from igi_base import
+# ...` haben (das steht nur in dags/main_dag.py). Ergebnis ohne diese Zeile:
+# "DAG Import Error"/ModuleNotFoundError für jedes Skript unter migration/,
+# obwohl die Skripte selbst nie direkt als DAG-Datei gedacht sind - sie
+# werden ausschließlich über _load_main() aus main_dag.py geladen. Wirkt nur
+# auf Airflows DAG-Scan, NICHT auf den rsync-Deploy (deploy.yml) - die
+# Dateien werden weiterhin ganz normal auf den Server kopiert.
+migration/
